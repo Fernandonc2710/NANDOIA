@@ -13,6 +13,11 @@ jobs:
       - name: Descargar codigo
         uses: actions/checkout@v4
 
+      - name: Verificar archivos en el runner
+        run: |
+          pwd
+          ls -la
+
       - name: Configurar Java 17
         uses: actions/setup-java@v4
         with:
@@ -35,4 +40,3 @@ jobs:
         with:
           name: Nando-APK
           path: bin/*.apk
-          
