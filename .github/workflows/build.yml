@@ -1,3 +1,30 @@
+[app]
+
+# (str) Title of your application
+title = Nando
+
+# (str) Package name
+package.name = nando
+
+# (str) Package domain (needed for android/ios packaging)
+package.domain = org.fernando
+
+# (str) Source code where the main.py live
+source.dir = .
+
+# (list) Source files to include (let empty to include all the files)
+source.include_exts = py,png,jpg,kv,atlas
+
+# (str) Application versioning (method 1)
+version = 0Buildozer no admite la opción `--spec`, por lo que interpretó `./buildozer.spec` como un comando desconocido (`Unknown command/target`). 
+
+El error original (`No buildozer.spec found in the current directory`) ocurrió porque el archivo fue creado en Windows o con saltos de línea incompatibles/caracteres ocultos que provocaron que la herramienta lo ignorara.
+
+Para resolverlo de forma definitiva, haremos que el propio flujo de trabajo genere un archivo de configuración completamente limpio directamente en el entorno de Ubuntu antes de invocar la compilación.
+
+Edita tu archivo `.github/workflows/build.yml` y reemplázalo por completo con el siguiente contenido:
+
+```yaml
 name: Compilar APK con Buildozer
 
 on:
@@ -26,9 +53,31 @@ jobs:
           pip3 install --upgrade pip
           pip3 install --upgrade cython buildozer virtualenv
 
-      - name: Compilar APK
+      - name: Generar especificacion limpia y compilar APK
         run: |
-          buildozer --spec ./buildozer.spec -v android debug
+          cat << 'EOF' > buildozer.spec
+          [app]
+          title = Nando
+          package.name = nando
+          package.domain = org.fernando
+          source.dir = .
+          source.include_exts = py,png,jpg,kv,atlas
+          version = 0.1
+          requirements = python3,kivy,requests,reportlab,python-docx,pillow
+          orientation = portrait
+          fullscreen = 0
+
+          android.permissions = INTERNET
+          android.api = 33
+          android.minapi = 24
+          android.ndk = 25b
+          android.archs = arm64-v8a
+
+          [buildozer]
+          log_level = 2
+          warn_on_root = 1
+          EOF
+          buildozer -v android debug
 
       - name: Subir APK generado
         uses: actions/upload-artifact@v4
