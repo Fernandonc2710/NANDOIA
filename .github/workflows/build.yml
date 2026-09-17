@@ -38,17 +38,17 @@ jobs:
           ln -sf ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager ~/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
           yes | ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-      - name: Asegurar punto de entrada main.py
+      - name: Instalar librerias puras en carpeta aislada
         run: |
-          # Si no existe main.py, busca cualquier archivo .py principal y crea el enlace
-          if [ ! -f "main.py" ]; then
-            PRINCIPAL=$(find . -maxdepth 2 -name "*.py" ! -name "buildozer.py" | head -n 1)
-            if [ -n "$PRINCIPAL" ]; then
-              cp "$PRINCIPAL" ./main.py
-            fi
+          mkdir -p libs
+          pip3 install --target=libs reportlab python-docx pillow requests charset-normalizer urllib3 idna chardet
+          
+          # Inyectar la ruta de libs al inicio de main.py si no esta presente
+          if ! grep -q "sys.path.insert(0, 'libs')" main.py; then
+            sed -i "1s|^|import sys, os\nsys.path.insert(0, os.path.join(os.path.dirname(__file__), 'libs'))\n\n|" main.py
           fi
 
-      - name: Generar especificacion y compilar APK
+      - name: Configurar buildozer.spec y compilar
         run: |
           cat << 'EOF' > buildozer.spec
           [app]
@@ -57,8 +57,9 @@ jobs:
           package.domain = org.fernando
           source.dir = .
           source.include_exts = py,png,jpg,kv,atlas
+          source.include_patterns = libs/*,libs/**/*
           version = 0.1
-          requirements = python3==3.11.9,hostpython3==3.11.9,kivy,pillow,requests,urllib3,chardet,idna,python-docx
+          requirements = python3==3.11.9,hostpython3==3.11.9,kivy
           orientation = portrait
           fullscreen = 0
 
@@ -73,8 +74,6 @@ jobs:
           log_level = 2
           warn_on_root = 1
           EOF
-
-          pip3 install --target=. reportlab
 
           buildozer -v android debug
 
