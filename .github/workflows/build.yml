@@ -12,10 +12,14 @@ jobs:
     steps:
       - name: Descargar codigo
         uses: actions/checkout@v4
+        with:
+          ref: main
 
-      - name: Verificar archivos en el runner
+      - name: Listar archivos
         run: |
+          echo "Directorio actual:"
           pwd
+          echo "Archivos encontrados:"
           ls -la
 
       - name: Configurar Java 17
@@ -35,6 +39,12 @@ jobs:
         run: |
           buildozer -v android debug
 
+      - name: Subir APK generado
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nando-APK
+          path: bin/*.apk
+          
       - name: Subir APK generado
         uses: actions/upload-artifact@v4
         with:
