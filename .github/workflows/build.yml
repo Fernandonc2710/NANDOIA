@@ -19,7 +19,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Instalar dependencias del sistema y headers graficos
+      - name: Instalar dependencias del sistema
         run: |
           sudo apt update
           sudo apt install -y git zip unzip autoconf libtool pkg-config zlib1g-dev \
@@ -28,22 +28,20 @@ jobs:
           pip3 install --upgrade pip
           pip3 install "cython<3.0.0" buildozer virtualenv
 
-      - name: Preparar herramientas de Android para Buildozer
+      - name: Preparar SDK y herramientas
         run: |
           mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools
           mkdir -p ~/.buildozer/android/platform/android-sdk/tools/bin
-          mkdir -p ~/.buildozer/android/platform/android-sdk/licenses
-
-          # Descargar commandlinetools oficiales de Google
           wget -q https://dl.google.com/android/repository/commandlinetools-linux-9477386_latest.zip -O /tmp/cmdtools.zip
           unzip -q /tmp/cmdtools.zip -d ~/.buildozer/android/platform/android-sdk/cmdline-tools/
           mv ~/.buildozer/android/platform/android-sdk/cmdline-tools/cmdline-tools ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest
-
-          # Vincular sdkmanager para que Buildozer lo encuentre sin importar que ruta busque
           ln -sf ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager ~/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
-
-          # Aceptar todas las licencias del SDK de forma anticipada
           yes | ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
+
+      - name: Instalar modulos Python pesados localmente
+        run: |
+          # Instalar reportlab y python-docx directamente como paquetes empaquetados
+          pip3 install --target=. reportlab python-docx pillow requests
 
       - name: Generar especificacion y compilar APK
         run: |
@@ -55,7 +53,7 @@ jobs:
           source.dir = .
           source.include_exts = py,png,jpg,kv,atlas
           version = 0.1
-          requirements = python3,kivy,requests,reportlab,python-docx,pillow
+          requirements = python3,kivy
           orientation = portrait
           fullscreen = 0
 
@@ -77,4 +75,3 @@ jobs:
         with:
           name: Nando-APK
           path: bin/*.apk
-          
