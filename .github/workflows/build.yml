@@ -1,30 +1,3 @@
-[app]
-
-# (str) Title of your application
-title = Nando
-
-# (str) Package name
-package.name = nando
-
-# (str) Package domain (needed for android/ios packaging)
-package.domain = org.fernando
-
-# (str) Source code where the main.py live
-source.dir = .
-
-# (list) Source files to include (let empty to include all the files)
-source.include_exts = py,png,jpg,kv,atlas
-
-# (str) Application versioning (method 1)
-version = 0Buildozer no admite la opción `--spec`, por lo que interpretó `./buildozer.spec` como un comando desconocido (`Unknown command/target`). 
-
-El error original (`No buildozer.spec found in the current directory`) ocurrió porque el archivo fue creado en Windows o con saltos de línea incompatibles/caracteres ocultos que provocaron que la herramienta lo ignorara.
-
-Para resolverlo de forma definitiva, haremos que el propio flujo de trabajo genere un archivo de configuración completamente limpio directamente en el entorno de Ubuntu antes de invocar la compilación.
-
-Edita tu archivo `.github/workflows/build.yml` y reemplázalo por completo con el siguiente contenido:
-
-```yaml
 name: Compilar APK con Buildozer
 
 on:
