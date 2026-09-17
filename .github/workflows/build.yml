@@ -1,4 +1,4 @@
-name: Compilar APK con Buildozer
+name: Compilar APK
 
 on:
   workflow_dispatch:
@@ -9,10 +9,8 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Descargar codigo
+      - name: Descargar repositorio
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Configurar Java 17
         uses: actions/setup-java@v4
@@ -20,7 +18,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Instalar dependencias del sistema
+      - name: Instalar paquetes base de Linux
         run: |
           sudo apt update
           sudo apt install -y git zip unzip autoconf libtool pkg-config zlib1g-dev \
@@ -29,7 +27,7 @@ jobs:
           pip3 install --upgrade pip
           pip3 install "cython<3.0.0" buildozer virtualenv
 
-      - name: Preparar herramientas de Android para Buildozer
+      - name: Configurar Command Line Tools y licencias Android
         run: |
           mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools
           mkdir -p ~/.buildozer/android/platform/android-sdk/tools/bin
@@ -39,38 +37,12 @@ jobs:
           ln -sf ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager ~/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
           yes | ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
-      - name: Garantizar archivo main.py
-        run: |
-          echo "=== Listado de archivos en el checkout ==="
-          ls -la
-          
-          # Si main.py no esta en la raiz, buscarlo en todo el arbol del repositorio
-          if [ ! -f "main.py" ]; then
-            ENCONTRADO=$(find . -name "main.py" | head -n 1)
-            if [ -n "$ENCONTRADO" ]; then
-              echo "Copiando $ENCONTRADO a ./main.py"
-              cp "$ENCONTRADO" ./main.py
-            else
-              echo "main.py no existe en esta rama. Buscando cualquier script python..."
-              OTRO=$(find . -maxdepth 2 -name "*.py" ! -name "buildozer.spec" | head -n 1)
-              if [ -n "$OTRO" ]; then
-                cp "$OTRO" ./main.py
-              fi
-            fi
-          fi
-
-      - name: Instalar librerias en carpeta aislada
+      - name: Descargar modulos Python en carpeta portable
         run: |
           mkdir -p libs
           pip3 install --target=libs reportlab python-docx pillow requests charset-normalizer urllib3 idna chardet
-          
-          if [ -f "main.py" ]; then
-            if ! grep -q "sys.path.insert(0, 'libs')" main.py; then
-              sed -i "1s|^|import sys, os\nsys.path.insert(0, os.path.join(os.path.dirname(__file__), 'libs'))\n\n|" main.py
-            fi
-          fi
 
-      - name: Configurar buildozer.spec y compilar
+      - name: Generar buildozer.spec y compilar
         run: |
           cat << 'EOF' > buildozer.spec
           [app]
@@ -78,7 +50,7 @@ jobs:
           package.name = nando
           package.domain = org.fernando
           source.dir = .
-          source.include_exts = py,png,jpg,kv,atlas
+          source.include_exts = py,png,jpg,kv,atlas,txt
           source.include_patterns = libs/*,libs/**/*
           version = 0.1
           requirements = python3==3.11.9,hostpython3==3.11.9,kivy
@@ -97,11 +69,18 @@ jobs:
           warn_on_root = 1
           EOF
 
+          # Asegurar que main.py tenga permisos legibles y formato UNIX
+          dos2unix main.py || true
+          chmod 644 main.py
+
+          # Precrear la ruta interna donde python-for-android busca main.py
+          mkdir -p .buildozer/android/app
+          cp -r main.py libs .buildozer/android/app/
+
           buildozer -v android debug
 
-      - name: Subir APK generado
+      - name: Guardar APK como artefacto
         uses: actions/upload-artifact@v4
         with:
           name: Nando-APK
           path: bin/*.apk
-          
