@@ -26,7 +26,7 @@ jobs:
           pip3 install --upgrade pip
           pip3 install --upgrade cython buildozer virtualenv
 
-      - name: Generar especificacion limpia y compilar APK
+      - name: Generar especificacion limpia
         run: |
           cat << 'EOF' > buildozer.spec
           [app]
@@ -45,14 +45,20 @@ jobs:
           android.minapi = 24
           android.ndk = 25b
           android.archs = arm64-v8a
-          android.accept_sdk_license = True
 
           [buildozer]
           log_level = 2
           warn_on_root = 1
           EOF
 
-          yes | buildozer -v android debug
+      - name: Aceptar licencias de Android y compilar APK
+        run: |
+          mkdir -p ~/.android
+          touch ~/.android/repositories.cfg
+          if [ -d "$ANDROID_HOME/cmdline-tools/latest/bin" ]; then
+            yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          fi
+          buildozer -v android debug
 
       - name: Subir APK generado
         uses: actions/upload-artifact@v4
