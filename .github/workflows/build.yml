@@ -28,7 +28,7 @@ jobs:
           pip3 install --upgrade pip
           pip3 install "cython<3.0.0" buildozer virtualenv
 
-      - name: Preparar SDK y herramientas
+      - name: Preparar herramientas de Android para Buildozer
         run: |
           mkdir -p ~/.buildozer/android/platform/android-sdk/cmdline-tools
           mkdir -p ~/.buildozer/android/platform/android-sdk/tools/bin
@@ -37,11 +37,6 @@ jobs:
           mv ~/.buildozer/android/platform/android-sdk/cmdline-tools/cmdline-tools ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest
           ln -sf ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager ~/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
           yes | ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
-
-      - name: Instalar modulos Python pesados localmente
-        run: |
-          # Instalar reportlab y python-docx directamente como paquetes empaquetados
-          pip3 install --target=. reportlab python-docx pillow requests
 
       - name: Generar especificacion y compilar APK
         run: |
@@ -53,7 +48,7 @@ jobs:
           source.dir = .
           source.include_exts = py,png,jpg,kv,atlas
           version = 0.1
-          requirements = python3,kivy
+          requirements = python3==3.11.9,hostpython3==3.11.9,kivy,pillow,requests,urllib3,chardet,idna,python-docx
           orientation = portrait
           fullscreen = 0
 
@@ -62,11 +57,15 @@ jobs:
           android.minapi = 24
           android.ndk = 25b
           android.archs = arm64-v8a
+          p4a.branch = release-2024.01.21
 
           [buildozer]
           log_level = 2
           warn_on_root = 1
           EOF
+
+          # Evitar reporte 403 de reportlab o pip incompatibles
+          pip3 install --target=. reportlab
 
           buildozer -v android debug
 
