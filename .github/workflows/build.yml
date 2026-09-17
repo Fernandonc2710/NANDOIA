@@ -19,7 +19,7 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      - name: Instalar dependencias del sistema
+      - name: Instalar dependencias del sistema y preparar SDK
         run: |
           sudo apt update
           sudo apt install -y git zip unzip autoconf libtool pkg-config zlib1g-dev \
@@ -27,7 +27,13 @@ jobs:
             libjpeg-dev libpng-dev libfreetype6-dev
           pip3 install --upgrade pip
           pip3 install "cython<3.0.0" buildozer virtualenv
+          
+          # Aceptar licencias en la ruta del sistema
           yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
+          
+          # Crear enlace de compatibilidad para la ruta antigua que busca Buildozer
+          sudo mkdir -p $ANDROID_HOME/tools/bin
+          sudo ln -sf $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager $ANDROID_HOME/tools/bin/sdkmanager
 
       - name: Generar especificacion y compilar APK
         run: |
@@ -62,3 +68,4 @@ jobs:
         with:
           name: Nando-APK
           path: bin/*.apk
+
