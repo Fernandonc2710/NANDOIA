@@ -38,6 +38,16 @@ jobs:
           ln -sf ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager ~/.buildozer/android/platform/android-sdk/tools/bin/sdkmanager
           yes | ~/.buildozer/android/platform/android-sdk/cmdline-tools/latest/bin/sdkmanager --licenses || true
 
+      - name: Asegurar punto de entrada main.py
+        run: |
+          # Si no existe main.py, busca cualquier archivo .py principal y crea el enlace
+          if [ ! -f "main.py" ]; then
+            PRINCIPAL=$(find . -maxdepth 2 -name "*.py" ! -name "buildozer.py" | head -n 1)
+            if [ -n "$PRINCIPAL" ]; then
+              cp "$PRINCIPAL" ./main.py
+            fi
+          fi
+
       - name: Generar especificacion y compilar APK
         run: |
           cat << 'EOF' > buildozer.spec
@@ -64,7 +74,6 @@ jobs:
           warn_on_root = 1
           EOF
 
-          # Evitar reporte 403 de reportlab o pip incompatibles
           pip3 install --target=. reportlab
 
           buildozer -v android debug
